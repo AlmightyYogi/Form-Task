@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             ExternalTeamSeeder::class,
             AllowedEmailSeeder::class,
+            UserSeeder::class,
         ]);
     }
 }
