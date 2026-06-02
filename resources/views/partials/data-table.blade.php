@@ -108,31 +108,28 @@
                             @if($responseDuration->h > 0) {{ $responseDuration->h }} Jam @endif
                             @if($responseDuration->i > 0) {{ $responseDuration->i }} Menit @endif
                         @else
-                            -
+                            <span class="text-muted">-</span>
                         @endif
                     </td>
 
                     <td>
+                        @if($report->servicerestored_time && $report->report_time && $report->request_date)
                             @php
-                                $totalSec = (int) ($report->restored_time ?? 0);
-                                $hours   = intdiv($totalSec, 3600);
-                                $minutes = intdiv($totalSec % 3600, 60);
-                                $seconds = $totalSec % 60;
-
-                                $parts = [];
-
-                                if ($hours > 0) {
-                                    $parts[] = $hours . ' jam';
-                                }
-                                if ($minutes > 0) {
-                                    $parts[] = $minutes . ' menit';
-                                }
-                                if ($seconds > 0 || empty($parts)) {
-                                    $parts[] = $seconds . ' detik';
-                                }
+                                $reportTime   = \Carbon\Carbon::parse($report->request_date->format('Y-m-d') . ' ' . $report->report_time);
+                                $restoredTime = \Carbon\Carbon::parse($report->servicerestored_time);
+                                $duration     = $restoredTime->diff($reportTime);
                             @endphp
-                                {{ implode(' ', $parts) }}
-                        </td>
+                            @if($duration->d > 0) {{ $duration->d }} Hari @endif
+                            @if($duration->h > 0) {{ $duration->h }} Jam @endif
+                            @if($duration->i > 0) {{ $duration->i }} Menit @endif
+
+                            @if($duration->d == 0 && $duration->h == 0 && $duration->i == 0)
+                                <span class="text-success">Immediate</span>
+                            @endif
+                        @else
+                            <span class="text-muted">Not yet restored</span>
+                        @endif
+                    </td>
 
                     <td>
                         @if($report->resolved_time && $report->created_at)
