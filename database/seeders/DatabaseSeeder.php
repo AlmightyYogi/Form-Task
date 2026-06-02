@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             ExternalTeamSeeder::class,
             AllowedEmailSeeder::class,
             UserSeeder::class,
+            ReportFromExcelSeeder::class,
         ]);
     }
 }

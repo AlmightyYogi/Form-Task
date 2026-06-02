@@ -312,20 +312,30 @@ class ReportController extends Controller
         return Excel::download(new ReportsExport($reports), $filename);
     }
 
-    public function chart(Request $request)
-    {
+    public function chart(Request $request) 
+    { 
         $period = $request->get('period', 'month');
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
 
         $query = Report::selectRaw('type, COUNT(*) as total')
                         ->groupBy('type');
 
-        if ($period === 'week') {
-            $query->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
-        } elseif ($period === 'month') {
-            $query->whereYear('created_at', Carbon::now()->year)
-                  ->whereMonth('created_at', Carbon::now()->month);
-        } elseif ($period === 'year') {
-            $query->whereYear('created_at', Carbon::now()->year);
+        if ($startDate && $endDate) {
+            $query->whereBetween('request_date', [$startDate, $endDate]);
+        }
+        else {
+            if ($period === 'week') {
+                $query->whereBetween('created_at', [
+                    Carbon::now()->startOfWeek(), 
+                    Carbon::now()->endOfWeek()
+                ]);
+            } elseif ($period === 'month') {
+                $query->whereYear('created_at', Carbon::now()->year)
+                    ->whereMonth('created_at', Carbon::now()->month);
+            } elseif ($period === 'year') {
+                $query->whereYear('created_at', Carbon::now()->year);
+            }
         }
 
         $data = $query->pluck('total', 'type')->toArray();

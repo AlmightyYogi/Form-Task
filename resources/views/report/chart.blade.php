@@ -9,19 +9,18 @@
     <div class="card-body p-4 p-md-5">
 
         <form method="GET" action="{{ route('report.chart') }}">
-
             <div class="mb-4 text-center">
                 <div class="btn-group" role="group">
-                    <a href="{{ route('report.chart', ['period' => 'week']) }}" 
-                       class="btn {{ $period === 'week' ? 'btn-primary' : 'btn-outline-primary' }}">
+                    <a href="{{ route('report.chart', ['period' => 'week']) }}"
+                    class="btn {{ $period === 'week' ? 'btn-primary' : 'btn-outline-primary' }}">
                         This Week
                     </a>
-                    <a href="{{ route('report.chart', ['period' => 'month']) }}" 
-                       class="btn {{ $period === 'month' ? 'btn-primary' : 'btn-outline-primary' }}">
+                    <a href="{{ route('report.chart', ['period' => 'month']) }}"
+                    class="btn {{ $period === 'month' ? 'btn-primary' : 'btn-outline-primary' }}">
                         This Month
                     </a>
-                    <a href="{{ route('report.chart', ['period' => 'year']) }}" 
-                       class="btn {{ $period === 'year' ? 'btn-primary' : 'btn-outline-primary' }}">
+                    <a href="{{ route('report.chart', ['period' => 'year']) }}"
+                    class="btn {{ $period === 'year' ? 'btn-primary' : 'btn-outline-primary' }}">
                         This Year
                     </a>
                 </div>
@@ -30,33 +29,32 @@
             <div class="row g-3 align-items-end mb-5">
                 <div class="col-md-4">
                     <label for="startDate" class="form-label fw-semibold">Start Date</label>
-                    <input type="date" 
-                           name="start_date" 
-                           value="{{ request('start_date') }}" 
-                           id="startDate" 
-                           class="form-control"
-                           placeholder="dd/mm/yyyy">
+                    <input type="date"
+                        name="start_date"
+                        value="{{ request('start_date') }}"
+                        id="startDate"
+                        class="form-control"
+                        placeholder="dd/mm/yyyy">
                 </div>
                 <div class="col-md-4">
                     <label for="endDate" class="form-label fw-semibold">End Date</label>
-                    <input type="date" 
-                           name="end_date" 
-                           value="{{ request('end_date') }}" 
-                           id="endDate" 
-                           class="form-control"
-                           placeholder="dd/mm/yyyy">
+                    <input type="date"
+                        name="end_date"
+                        value="{{ request('end_date') }}"
+                        id="endDate"
+                        class="form-control"
+                        placeholder="dd/mm/yyyy">
                 </div>
                 <div class="col-md-2">
                     <button type="submit" class="btn btn-primary w-100">Apply Filter</button>
                 </div>
                 <div class="col-md-2">
-                    <a href="{{ route('report.chart') }}" 
-                       class="btn btn-outline-secondary w-100">
+                    <a href="{{ route('report.chart') }}"
+                    class="btn btn-outline-secondary w-100">
                         Reset
                     </a>
                 </div>
             </div>
-
         </form>
 
         <div class="row justify-content-center">
