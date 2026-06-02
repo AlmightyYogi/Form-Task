@@ -113,12 +113,13 @@
                     </td>
 
                     <td>
-                        @if($report->servicerestored_time && $report->report_time && $report->request_date)
+                        @if($report->servicerestored_time && $report->created_at)
                             @php
-                                $reportTime   = \Carbon\Carbon::parse($report->request_date->format('Y-m-d') . ' ' . $report->report_time);
+                                $createdAt   = \Carbon\Carbon::parse($report->created_at);
                                 $restoredTime = \Carbon\Carbon::parse($report->servicerestored_time);
-                                $duration     = $restoredTime->diff($reportTime);
+                                $duration     = $restoredTime->diff($createdAt);
                             @endphp
+
                             @if($duration->d > 0) {{ $duration->d }} Hari @endif
                             @if($duration->h > 0) {{ $duration->h }} Jam @endif
                             @if($duration->i > 0) {{ $duration->i }} Menit @endif
@@ -132,13 +133,21 @@
                     </td>
 
                     <td>
-                        @if($report->resolved_time && $report->created_at)
+                        @if($report->closed_at && $report->created_at)
                             @php
-                                $resolvedDuration = $report->resolved_time->diff($report->created_at);
+                                $closedAt = \Carbon\Carbon::parse($report->closed_at);
+                                $createdAt = \Carbon\Carbon::parse($report->created_at);
+
+                                $resolvedDuration = $closedAt->diff($createdAt);
                             @endphp
+
                             @if($resolvedDuration->d > 0) {{ $resolvedDuration->d }} Hari @endif
                             @if($resolvedDuration->h > 0) {{ $resolvedDuration->h }} Jam @endif
                             @if($resolvedDuration->i > 0) {{ $resolvedDuration->i }} Menit @endif
+
+                            @if($resolvedDuration->d == 0 && $resolvedDuration->h == 0 && $resolvedDuration->i == 0)
+                                <span class="text-success">Immediate</span>
+                            @endif
                         @else
                             <span class="text-muted">Not yet resolved</span>
                         @endif
