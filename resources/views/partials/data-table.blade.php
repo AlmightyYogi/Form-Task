@@ -113,13 +113,13 @@
                     </td>
 
                     <td>
-                        @if($report->servicerestored_time && $report->created_at)
+                        @if($report->servicerestored_time && $report->report_time && $report->request_date)
                             @php
-                                $createdAt   = \Carbon\Carbon::parse($report->created_at);
+                                $reportTime   = \Carbon\Carbon::parse($report->request_date->format('Y-m-d') . ' ' . $report->report_time);
                                 $restoredTime = \Carbon\Carbon::parse($report->servicerestored_time);
-                                $duration     = $restoredTime->diff($createdAt);
+                                $duration     = $restoredTime->diff($reportTime);
                             @endphp
-
+                            
                             @if($duration->d > 0) {{ $duration->d }} Hari @endif
                             @if($duration->h > 0) {{ $duration->h }} Jam @endif
                             @if($duration->i > 0) {{ $duration->i }} Menit @endif
@@ -128,7 +128,11 @@
                                 <span class="text-success">Immediate</span>
                             @endif
                         @else
-                            <span class="text-muted">Not yet restored</span>
+                            @if($report->type === 'Activity')
+                                <span class="text-muted">-</span>
+                            @else
+                                <span class="text-muted">Not yet restored</span>
+                            @endif
                         @endif
                     </td>
 
@@ -137,7 +141,6 @@
                             @php
                                 $closedAt = \Carbon\Carbon::parse($report->closed_at);
                                 $createdAt = \Carbon\Carbon::parse($report->created_at);
-
                                 $resolvedDuration = $closedAt->diff($createdAt);
                             @endphp
 
@@ -149,7 +152,11 @@
                                 <span class="text-success">Immediate</span>
                             @endif
                         @else
-                            <span class="text-muted">Not yet resolved</span>
+                            @if($report->type === 'Activity')
+                                <span class="text-muted">-</span>
+                            @else
+                                <span class="text-muted">Not yet resolved</span>
+                            @endif
                         @endif
                     </td>
                     <td>
