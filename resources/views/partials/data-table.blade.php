@@ -128,7 +128,7 @@
                                 <span class="text-success">Immediate</span>
                             @endif
                         @else
-                            @if($report->type === 'Activity')
+                            @if($report->type === 'Activity' || $report->type === 'Request')
                                 <span class="text-muted">-</span>
                             @else
                                 <span class="text-muted">Not yet restored</span>
@@ -152,7 +152,7 @@
                                 <span class="text-success">Immediate</span>
                             @endif
                         @else
-                            @if($report->type === 'Activity')
+                            @if($report->type === 'Activity' || $report->type === 'Request')
                                 <span class="text-muted">-</span>
                             @else
                                 <span class="text-muted">Not yet resolved</span>
