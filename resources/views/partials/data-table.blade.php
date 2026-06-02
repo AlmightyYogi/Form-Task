@@ -114,25 +114,40 @@
 
                     <td>
                         @if($report->servicerestored_time && $report->report_time && $report->request_date)
-                            @php
-                                $reportTime   = \Carbon\Carbon::parse($report->request_date->format('Y-m-d') . ' ' . $report->report_time);
-                                $restoredTime = \Carbon\Carbon::parse($report->servicerestored_time);
-                                $duration     = $restoredTime->diff($reportTime);
-                            @endphp
-                            
-                            @if($duration->d > 0) {{ $duration->d }} Hari @endif
-                            @if($duration->h > 0) {{ $duration->h }} Jam @endif
-                            @if($duration->i > 0) {{ $duration->i }} Menit @endif
 
-                            @if($duration->d == 0 && $duration->h == 0 && $duration->i == 0)
+                            @php
+                                $reportTime = $report->request_date->copy()
+                                    ->setTimeFromTimeString($report->report_time);
+
+                                $restoredTime = \Carbon\Carbon::parse($report->servicerestored_time);
+
+                                $totalMinutes = $reportTime->diffInMinutes($restoredTime);
+                            @endphp
+
+                            @if($totalMinutes >= 1440)
+                                {{ floor($totalMinutes / 1440) }} Hari
+                            @endif
+
+                            @if(($totalMinutes % 1440) >= 60)
+                                {{ floor(($totalMinutes % 1440) / 60) }} Jam
+                            @endif
+
+                            @if($totalMinutes % 60 > 0)
+                                {{ $totalMinutes % 60 }} Menit
+                            @endif
+
+                            @if($totalMinutes == 0)
                                 <span class="text-success">Immediate</span>
                             @endif
+
                         @else
+
                             @if($report->type === 'Activity' || $report->type === 'Request')
                                 <span class="text-muted">-</span>
                             @else
-                                <span class="text-muted">Not yet restored</span>
+                                <span class="text-muted">Not yet resolved</span>
                             @endif
+
                         @endif
                     </td>
 
