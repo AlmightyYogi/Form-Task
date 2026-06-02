@@ -85,11 +85,15 @@
                     <tr>
                         <th>Restored Time</th>
                         <td>
-                            @if($report->servicerestored_time && $report->created_at)
+                            @if($report->servicerestored_time && $report->report_time && $report->request_date)
                                 @php
-                                    $createdAt   = \Carbon\Carbon::parse($report->created_at);
+                                    $reportTime = \Carbon\Carbon::parse(
+                                        $report->request_date->format('Y-m-d') . ' ' . $report->report_time
+                                    );
+
                                     $restoredTime = \Carbon\Carbon::parse($report->servicerestored_time);
-                                    $duration     = $restoredTime->diff($createdAt);
+
+                                    $duration = $restoredTime->diff($reportTime);
                                 @endphp
 
                                 @if($duration->d > 0) {{ $duration->d }} Hari @endif
@@ -103,7 +107,7 @@
                                 @if($report->type === 'Activity' || $report->type === 'Request')
                                     <span class="text-muted">-</span>
                                 @else
-                                    <span class="text-muted">Not yet resolved</span>
+                                    <span class="text-muted">Not yet restored</span>
                                 @endif
                             @endif
                         </td>
