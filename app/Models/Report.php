@@ -41,7 +41,8 @@ class Report extends Model
         'servicerestored_time' => 'datetime',
         'status' => 'integer',
         'handled_by' => 'boolean',
-        'restoration_evidence' => 'array'
+        'restoration_evidence' => 'array',
+        'file_downtime_evidence' => 'array',
     ];
 
     protected static function boot()
@@ -56,15 +57,6 @@ class Report extends Model
     public function externalTeams()
     {
         return $this->hasMany(ReportExternalTeam::class, 'report_id');
-    }
-
-    public function getFileDowntimeEvidenceUrlAttribute()
-    {
-        if (!$this->file_downtime_evidence) {
-            return null;
-        }
-
-        return Storage::disk('file_downtime_evidences')->url($this->file_downtime_evidence);
     }
 
     public function isExternal()

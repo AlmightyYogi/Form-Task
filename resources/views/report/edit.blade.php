@@ -120,22 +120,38 @@
                         @if(!auth()->user()->isAdmin()) readonly @endif>{{ old('description', $report->description) }}</textarea>
                 </div>
                 <div class="mb-4">
-                    <label class="form-label small text-muted">Upload Downtime Evidence</label>
-                    <input type="file" name="file_downtime_evidence" class="form-control"
-                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip">
-                    @if($report->file_downtime_evidence)
-                        <div class="mt-2 d-flex align-items-center gap-2">
-                            <small class="text-muted">Current File:</small>
-                            <a href="{{ $report->file_downtime_evidence_url }}" target="_blank" class="text-primary text-decoration-none">
-                                <i class="fas fa-paperclip me-1"></i>{{ $report->file_downtime_evidence }}
-                            </a>
+                    <label class="form-label small text-muted">Upload Evidence <small class="text-muted">(Max 5 Files)</small></label>
+                    <div id="downtimeEvidenceFields">
+                        @if(!empty($report->file_downtime_evidence))
+                            @foreach($report->file_downtime_evidence as $existingFile)
+                                <div class="downtime-evidence-row d-flex align-items-center gap-2 mb-2 existing-downtime-row">
+                                    <input type="text" class="form-control bg-light" value="{{ $existingFile }}" readonly>
+                                    <input type="hidden" name="existing_downtime_files[]" value="{{ $existingFile }}">
+                                    <button type="button" class="btn btn-danger btn-sm btn-remove-existing-downtime" title="Remove file">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            @endforeach
+                        @endif
+
+                        @php $existingDowntimeCount = !empty($report->file_downtime_evidence) ? count($report->file_downtime_evidence) : 0; @endphp
+                        @if($existingDowntimeCount < 5)
+                        <div class="downtime-evidence-row d-flex align-items-center gap-2 mb-2">
+                            <input type="file" name="file_downtime_evidence[]" class="form-control downtime-evidence-input"
+                                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip">
+                            <button type="button" class="btn btn-success btn-sm btn-add-downtime-evidence" title="Add file">
+                                <i class="fas fa-plus"></i>
+                            </button>
                         </div>
-                    @endif
+                        @endif
+                    </div>
+                    <small class="text-muted fw-semibold">Current Files:</small>
+                    <div id="previewDowntimeFiles" class="mt-2 d-flex flex-wrap gap-2"></div>
                 </div>
 
-                <hr class="mb-4">
+                <hr class="mb-4" id="hrExternalTeam" style="display: {{ $report->type === 'Incident' ? 'block' : 'none' }};">
 
-                <div class="mb-5">
+                <div class="mb-5" id="sectionExternalTeam" style="display: {{ $report->type === 'Incident' ? 'block' : 'none' }};">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
                             <h6 class="fw-semibold mb-1">Handled by External Team</h6>
@@ -231,9 +247,9 @@
                     </div>
                 </div>
 
-                <hr class="mb-4">
+                <hr class="mb-4" id="hrServiceRestoration" style="display: {{ $report->type === 'Incident' ? 'block' : 'none' }};">
 
-                <div class="mb-5">
+                <div class="mb-5" id="sectionServiceRestoration" style="display: {{ $report->type === 'Incident' ? 'block' : 'none' }};">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
                             <h6 class="fw-semibold mb-1">Service Restoration</h6>
@@ -278,7 +294,7 @@
 
                         <div class="mb-4">
                             <label class="form-label small text-muted">Resolution <span class="text-danger">*</span></label>
-                            <textarea name="resolution" class="form-control" rows="4" 
+                            <textarea name="resolution" id="resolutionTextArea" class="form-control" rows="4" 
                                 placeholder="Jelaskan langkah resolusi..."
                                 @if(!auth()->user()->isAdmin() && !$report->status) readonly @endif>{{ old('resolution', $report->resolution) }}</textarea>
                         </div>
@@ -321,9 +337,9 @@
                     </div>
                 </div>
 
-                <hr class="mb-4">
+                <hr class="mb-4" id="hrRca" style="display: {{ $report->type === 'Incident' ? 'block' : 'none' }};">
 
-                <div class="mb-4">
+                <div class="mb-4" id="sectionRca" style="display: {{ $report->type === 'Incident' ? 'block' : 'none' }};">
                     <label class="form-label small text-muted">Root Cause Analysis (RCA)</label>
                     <textarea name="rca" id="rcaEditor"
                         @if(!auth()->user()->isAdmin()) readonly @endif>{{ old('rca', $report->rca) }}</textarea>
@@ -644,6 +660,111 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    const MAX_DOWNTIME_FILES = 5;
+    const downtimeEvidenceFields = document.getElementById('downtimeEvidenceFields');
+    const previewDowntimeFiles = document.getElementById('previewDowntimeFiles');
+
+    function getDowntimeFileRows() {
+        return downtimeEvidenceFields.querySelectorAll('.downtime-evidence-row');
+    }
+
+    downtimeEvidenceFields.querySelectorAll('.btn-remove-existing-downtime').forEach(btn => {
+        btn.addEventListener('click', function () {
+            this.closest('.downtime-evidence-row').remove();
+            renderDowntimePreview();
+        });
+    });
+
+    function renderDowntimePreview() {
+        previewDowntimeFiles.innerHTML = '';
+        getDowntimeFileRows().forEach(row => {
+            const input     = row.querySelector('.downtime-evidence-input');
+            const textInput = row.querySelector('input[type="text"]');
+
+            if (input && input.files && input.files[0]) {
+                const file    = input.files[0];
+                const isImage = file.type.startsWith('image/');
+                const wrapper = document.createElement('div');
+                wrapper.className = 'border rounded p-1 text-center';
+                wrapper.style.cssText = 'width:90px; font-size:11px; overflow:hidden;';
+
+                if (isImage) {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        wrapper.innerHTML = `
+                            <img src="${e.target.result}" style="width:80px;height:60px;object-fit:cover;" class="rounded mb-1">
+                            <div class="text-truncate text-muted">${file.name}</div>
+                        `;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    wrapper.innerHTML = `
+                        <div style="width:80px;height:60px;line-height:60px;font-size:24px;" class="text-center text-muted">📄</div>
+                        <div class="text-truncate text-muted">${file.name}</div>
+                    `;
+                }
+                previewDowntimeFiles.appendChild(wrapper);
+            } else if (textInput) {
+                const filename = textInput.value;
+                const ext      = filename.split('.').pop().toLowerCase();
+                const isImage  = ['jpg','jpeg','png','gif','webp'].includes(ext);
+                const fileUrl  = `/storage/file_downtime_evidences/${filename}`;
+                const wrapper  = document.createElement('div');
+                wrapper.className = 'border rounded p-1 text-center';
+                wrapper.style.cssText = 'width:90px; font-size:11px; overflow:hidden;';
+
+                if (isImage) {
+                    wrapper.innerHTML = `
+                        <a href="${fileUrl}" target="_blank">
+                            <img src="${fileUrl}" style="width:80px;height:60px;object-fit:cover;" class="rounded mb-1">
+                        </a>
+                        <div class="text-truncate text-muted">${filename}</div>
+                    `;
+                } else {
+                    wrapper.innerHTML = `
+                        <div style="width:80px;height:60px;line-height:60px;font-size:24px;" class="text-center text-muted">📄</div>
+                        <div class="text-truncate text-muted">${filename}</div>
+                    `;
+                }
+                previewDowntimeFiles.appendChild(wrapper);
+            }
+        });
+    }
+
+    function addDowntimeEvidenceRow() {
+        if (getDowntimeFileRows().length >= MAX_DOWNTIME_FILES) return;
+
+        const row = document.createElement('div');
+        row.className = 'downtime-evidence-row d-flex align-items-center gap-2 mb-2';
+        row.innerHTML = `
+            <input type="file" name="file_downtime_evidence[]" class="form-control downtime-evidence-input"
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip">
+            <button type="button" class="btn btn-success btn-sm btn-add-downtime-evidence" title="Add file">
+                <i class="fas fa-plus"></i>
+            </button>
+            <button type="button" class="btn btn-danger btn-sm btn-remove-downtime-evidence" title="Remove field">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        downtimeEvidenceFields.appendChild(row);
+
+        row.querySelector('.downtime-evidence-input').addEventListener('change', renderDowntimePreview);
+        row.querySelector('.btn-add-downtime-evidence').addEventListener('click', addDowntimeEvidenceRow);
+        row.querySelector('.btn-remove-downtime-evidence').addEventListener('click', function () {
+            row.remove();
+            renderDowntimePreview();
+        });
+    }
+
+    if (downtimeEvidenceFields) {
+        const firstDowntimeInput  = downtimeEvidenceFields.querySelector('.downtime-evidence-input');
+        const firstDowntimeAddBtn = downtimeEvidenceFields.querySelector('.btn-add-downtime-evidence');
+        if (firstDowntimeInput)  firstDowntimeInput.addEventListener('change', renderDowntimePreview);
+        if (firstDowntimeAddBtn) firstDowntimeAddBtn.addEventListener('click', addDowntimeEvidenceRow);
+
+        renderDowntimePreview();
+    }
+
     const MAX_FILES = 5;
     const evidenceFields = document.getElementById('evidenceFields');
     const previewFiles = document.getElementById('previewFiles');
@@ -770,7 +891,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return getRestorationFileRows().length;
     }
 
-    // Handle remove existing restoration files
     restorationEvidenceFields.querySelectorAll('.btn-remove-existing-restoration').forEach(btn => {
         btn.addEventListener('click', function () {
             this.closest('.restoration-evidence-row').remove();
@@ -1179,6 +1299,26 @@ document.addEventListener('DOMContentLoaded', function () {
         priorityOptions.innerHTML = '';
         assignedOptions.innerHTML = '';
         scopeOptions.innerHTML = '';
+
+        const isIncident = type === 'Incident';
+        const sectionsIncidentOnly = [
+            'sectionExternalTeam', 'hrExternalTeam',
+            'sectionServiceRestoration', 'hrServiceRestoration',
+            'sectionRca', 'hrRca'
+        ];
+        sectionsIncidentOnly.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = isIncident ? 'block' : 'none';
+        });
+
+        const resolutionTextArea = document.getElementById('resolutionTextArea');
+        if (resolutionTextArea) {
+            if (isIncident) {
+                resolutionTextArea.setAttribute('required', 'required');
+            } else {
+                resolutionTextArea.removeAttribute('required');
+            }
+        }
 
         const severityValue = isInitialLoad ? '{{ old("severity", $report->severity ?? "") }}' : '';
         const assignedValue = isInitialLoad ? '{{ old("assigned_to", $report->assigned_to ?? "") }}' : '';

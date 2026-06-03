@@ -174,14 +174,34 @@ class ReportController extends Controller
                 $data['total_internal_duration'] = null;
             }
 
+            $existingDowntimeFiles = $request->input('existing_downtime_evidence', []);
+            
             if ($request->hasFile('file_downtime_evidence')) {
-                if ($report->file_downtime_evidence) {
-                    Storage::disk('public')->delete('file_downtime_evidences/' . $report->file_downtime_evidence);
+                if (!empty($report->file_downtime_evidence)) {
+                    foreach ($report->file_downtime_evidence as $oldFile) {
+                        if (!in_array($oldFile, $existingDowntimeFiles)) {
+                            Storage::disk('public')->delete('file_downtime_evidences/' . $oldFile);
+                        }
+                    }
                 }
-                $file     = $request->file('file_downtime_evidence');
-                $filename = time() . '_' . $file->getClientOriginalName();
-                $file->storeAs('file_downtime_evidences', $filename, 'public');
-                $data['file_downtime_evidence'] = $filename;
+
+                $newFiles = [];
+                foreach ($request->file('file_downtime_evidence') as $file) {
+                    $filename   = time() . '_' . Str::random(8) . '_' . $file->getClientOriginalName();
+                    $file->storeAs('file_downtime_evidences', $filename, 'public');
+                    $newFiles[] = $filename;
+                }
+
+                $data['file_downtime_evidence'] = array_merge($existingDowntimeFiles, $newFiles);
+            } else {
+                if (!empty($report->file_downtime_evidence)) {
+                    foreach ($report->file_downtime_evidence as $oldFile) {
+                        if (!in_array($oldFile, $existingDowntimeFiles)) {
+                            Storage::disk('public')->delete('file_downtime_evidences/' . $oldFile);
+                        }
+                    }
+                }
+                $data['file_downtime_evidence'] = $existingDowntimeFiles ?: null;
             }
 
             $existingRestorationFiles = $request->input('existing_restoration_files', []);

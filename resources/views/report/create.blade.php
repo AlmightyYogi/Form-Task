@@ -110,10 +110,19 @@
                 </div>
 
                 <div class="mb-4">
-                    <label class="form-label small text-muted">Upload Downtime Evidence</label>
-                    <input type="file" name="file_downtime_evidence" class="form-control"
-                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip">
+                    <label class="form-label small text-muted">Upload Downtime Evidence <small class="text-muted">(Max 5 Files)</small></label>
+                    <div id="downtimeEvidenceFields">
+                        <div class="downtime-evidence-row d-flex align-items-center gap-2 mb-2">
+                            <input type="file" name="file_downtime_evidence[]" class="form-control downtime-evidence-input"
+                                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip">
+                            <button type="button" class="btn btn-success btn-sm btn-add-downtime-evidence" title="Add file">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
                     <small class="text-muted">Format: image, PDF, Word, Excel, ZIP. Max 10MB.</small>
+                    <small class="text-muted fw-semibold d-block mt-1">Preview:</small>
+                    <div id="previewDowntimeFiles" class="mt-2 d-flex flex-wrap gap-2"></div>
                 </div>
 
                 <div class="text-end">
@@ -239,6 +248,75 @@ document.addEventListener('DOMContentLoaded', function () {
             ]
         }
     };
+
+    const MAX_DOWNTIME_FILES = 5;
+    const downtimeEvidenceFields = document.getElementById('downtimeEvidenceFields');
+    const previewDowntimeFiles   = document.getElementById('previewDowntimeFiles');
+
+    function getDowntimeFileRows() {
+        return downtimeEvidenceFields.querySelectorAll('.downtime-evidence-row');
+    }
+
+    function renderDowntimePreview() {
+        previewDowntimeFiles.innerHTML = '';
+        getDowntimeFileRows().forEach(row => {
+            const input = row.querySelector('.downtime-evidence-input');
+            if (input && input.files && input.files[0]) {
+                const file    = input.files[0];
+                const isImage = file.type.startsWith('image/');
+                const wrapper = document.createElement('div');
+                wrapper.className = 'border rounded p-1 text-center';
+                wrapper.style.cssText = 'width:90px; font-size:11px; overflow:hidden;';
+
+                if (isImage) {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        wrapper.innerHTML = `
+                            <img src="${e.target.result}" style="width:80px;height:60px;object-fit:cover;" class="rounded mb-1">
+                            <div class="text-truncate text-muted">${file.name}</div>
+                        `;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    wrapper.innerHTML = `
+                        <div style="width:80px;height:60px;line-height:60px;font-size:24px;" class="text-center text-muted">📄</div>
+                        <div class="text-truncate text-muted">${file.name}</div>
+                    `;
+                }
+                previewDowntimeFiles.appendChild(wrapper);
+            }
+        });
+    }
+
+    function addDowntimeEvidenceRow() {
+        if (getDowntimeFileRows().length >= MAX_DOWNTIME_FILES) return;
+
+        const row = document.createElement('div');
+        row.className = 'downtime-evidence-row d-flex align-items-center gap-2 mb-2';
+        row.innerHTML = `
+            <input type="file" name="file_downtime_evidence[]" class="form-control downtime-evidence-input"
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip">
+            <button type="button" class="btn btn-success btn-sm btn-add-downtime-evidence" title="Add file">
+                <i class="fas fa-plus"></i>
+            </button>
+            <button type="button" class="btn btn-danger btn-sm btn-remove-downtime-evidence" title="Remove field">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        downtimeEvidenceFields.appendChild(row);
+
+        row.querySelector('.downtime-evidence-input').addEventListener('change', renderDowntimePreview);
+        row.querySelector('.btn-add-downtime-evidence').addEventListener('click', addDowntimeEvidenceRow);
+        row.querySelector('.btn-remove-downtime-evidence').addEventListener('click', function () {
+            row.remove();
+            renderDowntimePreview();
+        });
+    }
+
+    const firstDowntimeInput  = downtimeEvidenceFields.querySelector('.downtime-evidence-input');
+    const firstDowntimeAddBtn = downtimeEvidenceFields.querySelector('.btn-add-downtime-evidence');
+    if (firstDowntimeInput)  firstDowntimeInput.addEventListener('change', renderDowntimePreview);
+    if (firstDowntimeAddBtn) firstDowntimeAddBtn.addEventListener('click', addDowntimeEvidenceRow);
 
     function handleOtherToggle(radioName, inputId) {
         const radios = document.querySelectorAll(`input[name="${radioName}"]`);

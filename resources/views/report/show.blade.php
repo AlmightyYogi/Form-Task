@@ -47,7 +47,7 @@
                     </tr>
                     <tr>
                         <th>Description</th>
-                        <td>{{ $report->description }}</td>
+                        <td style="white-space: pre-wrap; word-break: break-word;">{{ $report->description }}</td>
                     </tr>
                     <tr>
                         <th>Severity</th>
@@ -82,6 +82,7 @@
                         </td>
                     </tr>
 
+                    @if($report->type === 'Incident')
                     <tr>
                         <th>Restored Time</th>
                         <td>
@@ -108,7 +109,9 @@
                             @endif
                         </td>
                     </tr>
+                    @endif
 
+                    @if($report->type === 'Incident')
                     <tr>
                         <th>Resolved Time</th>
                         <td>
@@ -136,6 +139,8 @@
                             @endif
                         </td>
                     </tr>
+                    @endif
+
                     <tr>
                         <th>Status</th>
                         <td>
@@ -152,10 +157,13 @@
                         <th>INC (if any)</th>
                         <td>{{ $report->incident ?? '—' }}</td>
                     </tr>
+
+                    @if($report->type === 'Incident')
                     <tr>
                         <th>Resolution</th>
                         <td style="white-space: pre-wrap;">{{ $report->resolution ?? 'Not yet resolved' }}</td>
                     </tr>
+                    @endif
 
                     <tr>
                         <th>Closed At</th>
@@ -178,28 +186,23 @@
                     </tr>
 
                     <tr>
-                        <th>File Downtime Evidence</th>
+                        <th>File Evidence</th>
                         <td>
-                            @if($report->file_downtime_evidence)
-                                @php
-                                    $ext = strtolower(pathinfo($report->file_downtime_evidence, PATHINFO_EXTENSION));
-                                    $isImage = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']);
-                                @endphp
-                                
-                                <a href="{{ $report->file_downtime_evidence_url }}" 
-                                   target="_blank" 
-                                   class="btn btn-outline-primary d-inline-flex align-items-center gap-2">
-                                    <i class="bi {{ $isImage ? 'bi-image' : 'bi-file-earmark' }}"></i>
-                                    {{ $report->file_downtime_evidence }}
-                                </a>
-                                
-                                <small class="text-muted d-block mt-1">
-                                    @if($isImage)
-                                        Klik untuk melihat gambar
-                                    @else
-                                        Klik untuk download file
-                                    @endif
-                                </small>
+                            @if(!empty($report->file_downtime_evidence))
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach($report->file_downtime_evidence as $file)
+                                        @php
+                                            $ext     = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+                                            $isImage = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']);
+                                            $fileUrl = Storage::disk('public')->url('file_downtime_evidences/' . $file);
+                                        @endphp
+                                        <a href="{{ $fileUrl }}" target="_blank"
+                                        class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1">
+                                            <i class="bi {{ $isImage ? 'bi-image' : 'bi-file-earmark' }}"></i>
+                                            {{ $file }}
+                                        </a>
+                                    @endforeach
+                                </div>
                             @else
                                 <span class="text-muted">Tidak ada file terlampir</span>
                             @endif
