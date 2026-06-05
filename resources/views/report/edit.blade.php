@@ -10,7 +10,11 @@
             <form method="POST" action="{{ route('report.update', $report->uuid) }}" enctype="multipart/form-data" id="editForm">
                 @csrf
                 @method('PATCH')
-                @if(!$report->status && !auth()->user()->isAdmin())
+                @php
+                    $isEditableType = in_array($report->type, ['Request', 'Activity']);
+                    $canEdit = auth()->user()->isAdmin() || $isEditableType;
+                @endphp
+                @if(!$report->status && !auth()->user()->isAdmin() && !$isEditableType)
                     <div class="alert alert-warning text-center mb-4">
                         <strong>Ticket ini sudah Closed.</strong><br>
                         Hanya Admin yang dapat mengedit ticket Closed.
@@ -28,20 +32,20 @@
                             <label class="form-label small text-muted">Requestor <span class="text-danger">*</span></label>
                             <input type="text" name="requestor" class="form-control"
                                 value="{{ old('requestor', $report->requestor) }}" required
-                                @if(!auth()->user()->isAdmin()) readonly @endif>
+                                @if(!$canEdit) readonly @endif>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small text-muted">Email <span class="text-danger">*</span></label>
                             <input type="email" name="requestor_email" class="form-control"
                                 value="{{ old('requestor_email', $report->requestor_email) }}" required
-                                @if(!auth()->user()->isAdmin()) readonly @endif>
+                                @if(!$canEdit) readonly @endif>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small text-muted">Date <span class="text-danger">*</span></label>
                             <input type="date" name="request_date" class="form-control"
                                 value="{{ old('request_date', $report->request_date->format('Y-m-d')) }}" required
-                                @if(!auth()->user()->isAdmin()) disabled @endif>
-                            @if(!auth()->user()->isAdmin())
+                                @if(!$canEdit) disabled @endif>
+                            @if(!$canEdit)
                                 <input type="hidden" name="request_date" value="{{ $report->request_date->format('Y-m-d') }}">
                             @endif
                         </div>
@@ -49,8 +53,8 @@
                             <label class="form-label small text-muted">Time <span class="text-danger">*</span></label>
                             <input type="time" name="report_time" class="form-control"
                                 value="{{ old('report_time', $report->report_time) }}" required
-                                @if(!auth()->user()->isAdmin()) disabled @endif>
-                            @if(!auth()->user()->isAdmin())
+                                @if(!$canEdit) disabled @endif>
+                            @if(!$canEdit)
                                 <input type="hidden" name="report_time" value="{{ $report->report_time }}">
                             @endif
                         </div>
@@ -68,13 +72,13 @@
                                     <div class="form-check">
                                         <input type="radio" name="apps" value="{{ $app }}" class="form-check-input"
                                             {{ old('apps', $report->apps) == $app ? 'checked' : '' }}
-                                            @if(!auth()->user()->isAdmin()) disabled @endif>
+                                            @if(!$canEdit) disabled @endif>
                                         <label class="form-check-label small">{{ $app }}</label>
                                     </div>
                                 </div>
                                 @endforeach
                             </div>
-                            @if(!auth()->user()->isAdmin())
+                            @if(!$canEdit)
                                 <input type="hidden" name="apps" value="{{ $report->apps }}">
                             @endif
                         </div>
@@ -85,12 +89,12 @@
                                 <div class="form-check">
                                     <input type="radio" name="type" value="{{ $type }}" class="form-check-input type-radio"
                                         {{ old('type', $report->type ?? 'Incident') == $type ? 'checked' : '' }}
-                                        @if(!auth()->user()->isAdmin()) disabled @endif>
+                                        @if(!$canEdit) disabled @endif>
                                     <label class="form-check-label">{{ $type }}</label>
                                 </div>
                                 @endforeach
                             </div>
-                            @if(!auth()->user()->isAdmin())
+                            @if(!$canEdit)
                                 <input type="hidden" name="type" value="{{ $report->type }}">
                             @endif
                         </div>
@@ -117,7 +121,7 @@
                 <div class="mb-4">
                     <label class="form-label small text-muted">Description <span class="text-danger">*</span></label>
                     <textarea name="description" class="form-control" rows="4" required
-                        @if(!auth()->user()->isAdmin()) readonly @endif>{{ old('description', $report->description) }}</textarea>
+                        @if(!$canEdit) readonly @endif>{{ old('description', $report->description) }}</textarea>
                 </div>
                 <div class="mb-4">
                     <label class="form-label small text-muted">Upload Evidence <small class="text-muted">(Max 5 Files)</small></label>
@@ -342,38 +346,56 @@
                 <div class="mb-4" id="sectionRca" style="display: {{ $report->type === 'Incident' ? 'block' : 'none' }};">
                     <label class="form-label small text-muted">Root Cause Analysis (RCA)</label>
                     <textarea name="rca" id="rcaEditor"
-                        @if(!auth()->user()->isAdmin()) readonly @endif>{{ old('rca', $report->rca) }}</textarea>
+                        @if(!$canEdit) readonly @endif>{{ old('rca', $report->rca) }}</textarea>
                 </div>
                 
                 <div class="d-flex justify-content-between align-items-center gap-2 mt-4">
                     <div>
-                        @if($report->status == 0)
-                            <span class="badge bg-secondary px-3 py-2 fs-6">Ticket Closed</span>
-                        @else
-                            @php
-                                $canClose = $report->servicerestored_time 
-                                    && !empty($report->resolution)
-                                    && !empty($report->rca)
-                                    && !empty($report->restoration_evidence);
-                            @endphp
-                            <button type="button" id="btnCloseTicket" class="btn btn-danger px-4"
-                                {{ !$canClose ? 'disabled' : '' }}>
-                                Close Ticket
-                            </button>
-                            {{-- <div id="closeTicketHints" class="mt-1">
-                                @if(!$report->servicerestored_time)
-                                    <small class="text-muted d-block"><i class="fas fa-times-circle text-danger"></i> Service Restoration belum diaktifkan</small>
-                                @endif
-                                @if(empty($report->resolution))
-                                    <small class="text-muted d-block"><i class="fas fa-times-circle text-danger"></i> Resolution belum diisi</small>
-                                @endif
-                                @if(empty($report->rca))
-                                    <small class="text-muted d-block"><i class="fas fa-times-circle text-danger"></i> RCA belum diisi</small>
-                                @endif
-                                @if(empty($report->restoration_evidence))
-                                    <small class="text-muted d-block"><i class="fas fa-times-circle text-danger"></i> Restoration Evidence belum diupload</small>
-                                @endif
-                            </div> --}}
+                        @if($report->type === 'Incident')
+                            @if($report->status == 0)
+                                <span class="badge bg-secondary px-3 py-2 fs-6">Ticket Closed</span>
+                            @else
+                                @php
+                                    $canClose = $report->servicerestored_time 
+                                        && !empty($report->resolution)
+                                        && !empty($report->rca)
+                                        && !empty($report->restoration_evidence);
+                                @endphp
+                                <button type="button" id="btnCloseTicket" class="btn btn-danger px-4"
+                                    {{ !$canClose ? 'disabled' : '' }}>
+                                    Close Ticket
+                                </button>
+                            @endif
+                        @elseif(in_array($report->type, ['Request', 'Activity']))
+                            <div class="d-flex flex-column gap-1">
+                                <small class="text-muted fw-semibold">Set Status Penyelesaian:</small>
+                                <div class="d-flex gap-2">
+                                    <button type="button"
+                                        class="btn btn-sm px-3 py-2 btn-set-status {{ $report->status == 4 ? 'btn-success active' : 'btn-outline-success' }}"
+                                        data-status="4"
+                                        {{ $report->status == 4 ? 'disabled' : '' }}
+                                        style="border-radius: 8px; min-width: 110px;">
+                                        <i class="fas fa-check-circle me-1"></i><br>
+                                        <span class="fw-semibold">Done</span>
+                                    </button>
+                                    <button type="button"
+                                        class="btn btn-sm px-3 py-2 btn-set-status {{ $report->status == 5 ? 'btn-warning active' : 'btn-outline-warning' }}"
+                                        data-status="5"
+                                        {{ $report->status == 5 ? 'disabled' : '' }}
+                                        style="border-radius: 8px; min-width: 110px;">
+                                        <i class="fas fa-adjust me-1"></i><br>
+                                        <span class="fw-semibold">Done Partial</span>
+                                    </button>
+                                    <button type="button"
+                                        class="btn btn-sm px-3 py-2 btn-set-status {{ $report->status == 6 ? 'btn-danger active' : 'btn-outline-danger' }}"
+                                        data-status="6"
+                                        {{ $report->status == 6 ? 'disabled' : '' }}
+                                        style="border-radius: 8px; min-width: 110px;">
+                                        <i class="fas fa-undo me-1"></i><br>
+                                        <span class="fw-semibold">Rollback</span>
+                                    </button>
+                                </div>
+                            </div>
                         @endif
                     </div>
 
@@ -381,7 +403,7 @@
                         <a href="{{ route('report.show', $report->uuid) }}" class="btn btn-outline-secondary">
                             Cancel
                         </a>
-                        @if(auth()->user()->isAdmin() || $report->status == 1 || $report->status == 2)
+                        @if(auth()->user()->isAdmin() || in_array($report->status, [1, 2, 4, 5, 6]))
                             <button type="submit" id="submitBtn" class="btn btn-primary px-4">
                                 Save Changes
                             </button>
@@ -481,7 +503,7 @@
 window.addEventListener('load', function () {
     if (typeof ClassicEditor === 'undefined') return;
 
-    const isClosed = @json(!$report->status);
+    const isClosed = @json($report->status == 0);
     const isAdmin = @json(auth()->user()->isAdmin());
 
     ClassicEditor.create(document.querySelector('#rcaEditor'), {
@@ -567,6 +589,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const alreadyRestored = servicerestoredTimeInput.value !== '';
 
+    function updateResolutionRequired() {
+        const resolutionTextArea = document.getElementById('resolutionTextArea');
+        if (!resolutionTextArea) return;
+
+        const isRestorationVisible = serviceRestorationContent.style.display !== 'none';
+        if (isRestorationVisible) {
+            resolutionTextArea.setAttribute('required', 'required');
+        } else {
+            resolutionTextArea.removeAttribute('required');
+        }
+    }
+
+    updateResolutionRequired();
+
     if (serviceRestoredToggle) {
         serviceRestoredToggle.addEventListener('change', function (e) {
             if (alreadyRestored) {
@@ -610,6 +646,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             if (data.success) {
                                 servicerestoredTimeInput.value = data.servicerestored_time ?? '';
                                 serviceRestorationContent.style.display = 'block';
+                                updateResolutionRequired();
 
                                 const statusInput = document.getElementById('statusInput');
                                 if (statusInput) statusInput.value = '2';
@@ -641,6 +678,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 serviceRestorationContent.style.display = 'none';
                 servicerestoredTimeInput.value = '';
+                updateResolutionRequired();
             }
         });
     }
@@ -1245,7 +1283,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const scopeOptions = document.getElementById('scopeOptions');
     
     let isInitialLoad = true;
-    const isClosed = @json(!$report->status);
+    const isClosed = @json($report->status == 0);
     const isAdmin = @json(auth()->user()->isAdmin());
 
     const configs = {
@@ -1292,6 +1330,54 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    document.querySelectorAll('.btn-set-status').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const statusValue = this.dataset.status;
+            const statusLabels = { '4': 'Done', '5': 'Done Partial', '6': 'Rollback' };
+            const statusColors = { '4': '#198754', '5': '#ffc107', '6': '#dc3545' };
+
+            Swal.fire({
+                title: `Set status ke "${statusLabels[statusValue]}"?`,
+                text: 'Status akan disimpan bersama perubahan lain saat klik Save Changes.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: statusColors[statusValue],
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, Choose',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('statusInput').value = statusValue;
+
+                    document.querySelectorAll('.btn-set-status').forEach(b => {
+                        b.disabled = false;
+                        b.classList.remove('active', 'btn-success', 'btn-warning', 'btn-danger');
+                        b.classList.add(
+                            b.dataset.status === '4' ? 'btn-outline-success' :
+                            b.dataset.status === '5' ? 'btn-outline-warning' : 'btn-outline-danger'
+                        );
+                    });
+
+                    this.classList.remove('btn-outline-success', 'btn-outline-warning', 'btn-outline-danger');
+                    this.classList.add(
+                        statusValue === '4' ? 'btn-success' :
+                        statusValue === '5' ? 'btn-warning' : 'btn-danger',
+                        'active'
+                    );
+                    this.disabled = true;
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: `Status diset ke "${statusLabels[statusValue]}"`,
+                        text: 'Klik Save Changes untuk menyimpan.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+            });
+        });
+    });
+
     function updateFields(type) {
         if (!configs[type]) return;
         dynamicFields.style.display = 'block';
@@ -1312,13 +1398,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         const resolutionTextArea = document.getElementById('resolutionTextArea');
-        if (resolutionTextArea) {
-            if (isIncident) {
-                resolutionTextArea.setAttribute('required', 'required');
-            } else {
-                resolutionTextArea.removeAttribute('required');
-            }
-        }
+        // if (resolutionTextArea) {
+        //     if (isIncident) {
+        //         resolutionTextArea.setAttribute('required', 'required');
+        //     } else {
+        //         resolutionTextArea.removeAttribute('required');
+        //     }
+        // }
 
         const severityValue = isInitialLoad ? '{{ old("severity", $report->severity ?? "") }}' : '';
         const assignedValue = isInitialLoad ? '{{ old("assigned_to", $report->assigned_to ?? "") }}' : '';

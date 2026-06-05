@@ -148,8 +148,16 @@
                                 <span class="badge bg-danger">Closed</span>
                             @elseif($report->status == 1)
                                 <span class="badge bg-success">Open</span>
+                            @elseif($report->status == 2)
+                                <span class="badge bg-warning text-dark">Restored</span>
+                            @elseif($report->status == 4)
+                                <span class="badge bg-success">Done</span>
+                            @elseif($report->status == 5)
+                                <span class="badge bg-warning text-dark">Done Partial</span>
+                            @elseif($report->status == 6)
+                                <span class="badge bg-danger">Rollback</span>
                             @else
-                                <span class="badge bg-warning">Restored</span>
+                                <span class="badge bg-secondary">Unknown</span>
                             @endif
                         </td>
                     </tr>
