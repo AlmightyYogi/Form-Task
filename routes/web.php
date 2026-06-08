@@ -42,7 +42,8 @@ Route::middleware('auth')->group(function () {
     // Report
     Route::get('/', [ReportController::class, 'create'])->name('report.create');
     Route::get('/reports', [ReportController::class, 'index'])->name('report.index');
-    Route::get('/reports/export', [ReportController::class,'export'])->name('report.export');
+    Route::get('/reports/export', [ReportController::class, 'export'])->name('report.export');
+    Route::get('/reports/export-count', [ReportController::class,'exportCount'])->name('report.exportCount');
     Route::get('/reports/chart', [ReportController::class, 'chart'])->name('report.chart');
     Route::post('/report', [ReportController::class, 'store'])->name('report.store');
     Route::get('/reportShow/{uuid}', [ReportController::class, 'show'])->name('report.show');

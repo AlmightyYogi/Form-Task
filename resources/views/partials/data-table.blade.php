@@ -51,11 +51,43 @@
             </div>
 
             <div>
-                <a href="{{ route('report.export', array_merge(request()->only('search', 'start_date', 'end_date'), ['page' => request('page', 1)])) }}" 
-                   class="btn btn-success btn-lg px-4 py-2 shadow-sm">
-                    <i class="fas fa-file-excel me-2"></i> 
+                <button type="button" id="btnExportExcel" class="btn btn-success btn-lg px-4 py-2 shadow-sm">
+                    <i class="fas fa-file-excel me-2"></i>
                     Export Excel
-                </a>
+                </button>
+            </div>
+
+            {{-- Loading Overlay --}}
+            <div id="exportOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+                <div class="bg-white rounded-4 shadow-lg p-5 text-center" style="min-width:340px; max-width:420px;">
+                    <div class="mb-4">
+                        <div class="spinner-border text-success mb-3" style="width:3rem;height:3rem;" role="status"></div>
+                        <h5 class="fw-bold mb-1" id="exportStatusTitle">Mempersiapkan Export</h5>
+                        <p class="text-muted small mb-0" id="exportStatusDesc">Sedang menghitung jumlah data...</p>
+                    </div>
+
+                    <div class="progress mb-3" style="height:10px; border-radius:10px;">
+                        <div id="exportProgressBar"
+                            class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                            style="width: 0%; transition: width 0.5s ease;">
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-center gap-2 flex-wrap" id="exportSteps">
+                        <span class="badge bg-secondary px-3 py-2" id="step1">
+                            <i class="fas fa-database me-1"></i> Menghitung Data
+                        </span>
+                        <span class="badge bg-secondary px-3 py-2" id="step2">
+                            <i class="fas fa-cogs me-1"></i> Memproses
+                        </span>
+                        <span class="badge bg-secondary px-3 py-2" id="step3">
+                            <i class="fas fa-file-excel me-1"></i> Membuat File
+                        </span>
+                        <span class="badge bg-secondary px-3 py-2" id="step4">
+                            <i class="fas fa-download me-1"></i> Mengunduh
+                        </span>
+                    </div>
+                </div>
             </div>
 
         </div>
@@ -243,5 +275,75 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = row.dataset.id;
         if (id) window.location.href = `/reportShow/${id}`;
     });
+});
+
+document.getElementById('btnExportExcel').addEventListener('click', function () {
+    const overlay      = document.getElementById('exportOverlay');
+    const progressBar  = document.getElementById('exportProgressBar');
+    const statusTitle  = document.getElementById('exportStatusTitle');
+    const statusDesc   = document.getElementById('exportStatusDesc');
+    const steps        = ['step1', 'step2', 'step3', 'step4'];
+
+    function setStep(stepIndex, progress, title, desc) {
+        progressBar.style.width = progress + '%';
+        statusTitle.textContent = title;
+        statusDesc.textContent  = desc;
+
+        steps.forEach((id, i) => {
+            const el = document.getElementById(id);
+            el.className = 'badge px-3 py-2 ' + (
+                i < stepIndex  ? 'bg-success' :
+                i === stepIndex ? 'bg-primary'  : 'bg-secondary'
+            );
+        });
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const exportUrl = new URL('{{ route("report.export") }}', window.location.origin);
+
+    if (urlParams.has('search')) exportUrl.searchParams.set('search', urlParams.get('search'));
+    if (urlParams.has('start_date')) exportUrl.searchParams.set('start_date', urlParams.get('start_date'));
+    if (urlParams.has('end_date')) exportUrl.searchParams.set('end_date', urlParams.get('end_date'));
+    if (urlParams.has('page')) exportUrl.searchParams.set('page', urlParams.get('page'));
+
+    overlay.style.display = 'flex';
+    setStep(0, 10, 'Mempersiapkan Export', 'Sedang menghitung jumlah data...');
+
+    const countUrl = new URL('{{ route("report.exportCount") }}', window.location.origin);
+    if (urlParams.has('search')) countUrl.searchParams.set('search', urlParams.get('search'));
+    if (urlParams.has('start_date')) countUrl.searchParams.set('start_date', urlParams.get('start_date'));
+    if (urlParams.has('end_date')) countUrl.searchParams.set('end_date', urlParams.get('end_date'));
+
+    fetch(countUrl.toString())
+        .then(res => res.json())
+        .then(data => {
+            const count = data.count || 0;
+            setStep(1, 35, 'Memproses Data', `Ditemukan ${count.toLocaleString('id-ID')} data...`);
+
+            setTimeout(() => {
+                setStep(2, 65, 'Membuat File Excel', 'Sedang menyusun format dan styling...');
+
+                setTimeout(() => {
+                    setStep(3, 85, 'Mengunduh File', 'File sedang diunduh...');
+
+                    window.location.href = exportUrl.toString();
+
+                    setTimeout(() => {
+                        setStep(4, 100, 'Selesai!', 'File berhasil diunduh');
+                        progressBar.classList.remove('progress-bar-animated');
+
+                        setTimeout(() => {
+                            overlay.style.display = 'none';
+                            progressBar.style.width = '0%';
+                            progressBar.classList.add('progress-bar-animated');
+                        }, 1800);
+                    }, 1200);
+                }, 900);
+            }, 800);
+        })
+        .catch(() => {
+            overlay.style.display = 'none';
+            alert('Gagal memulai export. Silakan coba lagi.');
+        });
 });
 </script>

@@ -301,21 +301,44 @@ class ReportController extends Controller
 
     public function export(Request $request)
     {
+        $search    = $request->get('search');
+        $startDate = $request->get('start_date');
+        $endDate   = $request->get('end_date');
+        $page      = $request->get('page');
+        $allData   = $request->get('all_data', false);
+
+        if (!$search && !$startDate && !$endDate && !$page) {
+            $allData = true;
+        }
+
+        $filename = $allData
+            ? 'Reports_All_' . now()->format('Ymd_His') . '.xlsx'
+            : 'Reports_Page' . ($page ?? 1) . '_' . now()->format('Ymd_His') . '.xlsx';
+
+        return Excel::download(
+            new ReportsExport($search, $startDate, $endDate, $page, 15, $allData),
+            $filename,
+            \Maatwebsite\Excel\Excel::XLSX
+        );
+    }
+
+    public function exportCount(Request $request)
+    {
         $query = Report::query();
 
         if ($request->search) {
-            $search = $request->search;
-            $statusMap = ['closed' => 0, 'open' => 1, 'restored' => 2];
+            $search      = $request->search;
+            $statusMap   = ['closed' => 0, 'open' => 1, 'restored' => 2, 'done' => 4, 'done partial' => 5, 'rollback' => 6];
             $searchLower = strtolower($search);
 
             $query->where(function ($q) use ($search, $searchLower, $statusMap) {
                 $q->where('incident', 'like', "%$search%")
-                  ->orWhere('requestor', 'like', "%$search%")
-                  ->orWhere('requestor_email', 'like', "%$search%")
-                  ->orWhere('apps', 'like', "%$search%")
-                  ->orWhere('assigned_to', 'like', "%$search%")
-                  ->orWhere('scope', 'like', "%$search%")
-                  ->orWhere('severity', 'like', "%$search%");
+                ->orWhere('requestor', 'like', "%$search%")
+                ->orWhere('requestor_email', 'like', "%$search%")
+                ->orWhere('apps', 'like', "%$search%")
+                ->orWhere('assigned_to', 'like', "%$search%")
+                ->orWhere('scope', 'like', "%$search%")
+                ->orWhere('severity', 'like', "%$search%");
                 if (isset($statusMap[$searchLower])) {
                     $q->orWhere('status', $statusMap[$searchLower]);
                 }
@@ -325,21 +348,11 @@ class ReportController extends Controller
         if ($request->start_date) {
             $query->whereDate('request_date', '>=', $request->start_date);
         }
-
         if ($request->end_date) {
             $query->whereDate('request_date', '<=', $request->end_date);
         }
 
-        $page = $request->get('page', 1);
-        $perPage = 15;
-        $reports = $query->orderBy('created_at', 'desc')
-                         ->forPage($page, $perPage)
-                         ->get();
-
-        // $filename = 'reports_page' . $page . '_' . now()->format('Ymd_His') . '.xlsx';
-        $filename = 'Reports Page' . '.xlsx';
-
-        return Excel::download(new ReportsExport($reports), $filename);
+        return response()->json(['count' => $query->count()]);
     }
 
     public function chart(Request $request) 
