@@ -72,10 +72,12 @@
                 <th>Requestor</th>
                 <th>Date & Time</th>
                 <th>Application</th>
+                <th>Description</th>
                 <th>Severity</th>
-                <th>Response Time</th>
+                <th>Assigned To</th>
+                {{-- <th>Response Time</th>
                 <th>Restored Time</th>
-                <th>Resolved Time</th>
+                <th>Resolved Time</th> --}}
                 <th>Status</th>
             </tr>
         </thead>
@@ -91,14 +93,26 @@
                         @endif
                     </td>
                     <td>{{ $report->requestor }}</td>
-                    <td data-iso-date="{{ $report->request_date->format('Y-m-d') }}" data-time="{{ $report->report_time }}"></td>
+                    <td style="white-space: pre-wrap; word-break: break-word;" data-iso-date="{{ $report->request_date->format('Y-m-d') }}" data-time="{{ $report->report_time }}"></td>
                     <td>{{ $report->apps }}</td>
+                    <td title="{{ $report->description }}">
+                        <div style="
+                            display: -webkit-box;
+                            -webkit-line-clamp: 3;
+                            -webkit-box-orient: vertical;
+                            overflow: hidden;
+                            white-space: normal;
+                            word-break: break-word;
+                            max-width: 250px;
+                        ">{{ $report->description }}</div>
+                    </td>
                     <td>
                         <span class="badge bg-{{ $report->severity <= 2 ? 'danger' : ($report->severity == 3 ? 'warning' : 'secondary') }}">
                             {{ $report->severity }}
                         </span>
                     </td>
-                    <td>
+                    <td>{{ $report->assigned_to }}</td>
+                    {{-- <td>
                         @if($report->response_time && $report->created_at)
                             @php
                                 $issueTime = \Carbon\Carbon::parse($report->request_date->format('Y-m-d') . ' ' . $report->report_time);
@@ -158,7 +172,7 @@
                                 <span class="text-muted">Not yet resolved</span>
                             @endif
                         @endif
-                    </td>
+                    </td> --}}
                     <td>
                         @if($report->status == 0)
                             <span class="badge bg-danger">Closed</span>

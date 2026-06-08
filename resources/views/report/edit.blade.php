@@ -58,6 +58,17 @@
                                 <input type="hidden" name="report_time" value="{{ $report->report_time }}">
                             @endif
                         </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">Ticket Created At</label>
+                            <input type="datetime-local"
+                                name="created_at"
+                                id="createdAtInput"
+                                class="form-control"
+                                value="{{ $report->created_at ? $report->created_at->format('Y-m-d\TH:i') : '' }}"
+                                @if(!auth()->user()->isAdmin()) readonly @endif>
+                            <small class="text-muted">Ticket creation time (change if there is an error)</small>
+                        </div>
                     </div>
                 </div>
                 <hr class="my-4">
@@ -254,52 +265,91 @@
                 <hr class="mb-4" id="hrServiceRestoration" style="display: {{ $report->type === 'Incident' ? 'block' : 'none' }};">
 
                 <div class="mb-5" id="sectionServiceRestoration" style="display: {{ $report->type === 'Incident' ? 'block' : 'none' }};">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <h6 class="fw-semibold mb-1">Service Restoration</h6>
-                            <div id="restorationInfo">
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h6 class="fw-semibold mb-1">Service Restoration</h6>
+                                <small class="text-muted">Note the time the service was successfully restored.</small>
+                            </div>
+                            @if($report->servicerestored_time)
+                                <span class="badge bg-success px-3 py-2">
+                                    <i class="fas fa-check-circle me-1"></i> Restored
+                                </span>
+                            @else
+                                <span class="badge bg-secondary px-3 py-2">
+                                    <i class="fas fa-clock me-1"></i> Belum Restored
+                                </span>
+                            @endif
+                        </div>
+
+                        <div class="card border-0 bg-light rounded-3 p-3">
+                            <div class="row g-3 align-items-center">
+                                <div class="col-md-7">
+                                    <label class="form-label small fw-semibold text-muted">
+                                        <i class="fas fa-calendar-check me-1 text-success"></i>
+                                        Service Restored Time
+                                    </label>
+                                    <input type="datetime-local"
+                                        name="servicerestored_time"
+                                        id="servicerestoredTimeInput"
+                                        class="form-control"
+                                        value="{{ $report->servicerestored_time ? $report->servicerestored_time->format('Y-m-d\TH:i') : '' }}"
+                                        @if(!auth()->user()->isAdmin()) readonly @endif>
+                                </div>
+
                                 @if($report->servicerestored_time)
-                                    <small class="text-muted">
-                                        Restored on {{ $report->servicerestored_time->translatedFormat('D, j M Y') }} at 
-                                        {{ $report->servicerestored_time->format('H:i') }}
-                                    </small><br>
-                                    <small class="text-muted">
-                                        Total: 
-                                        @php
-                                            $totalSec = (int) ($report->restored_time ?? 0);
-                                            $extSec   = (int) $report->externalTeams->sum('duration') * 60;
-                                            $intSec   = max(0, $totalSec - $extSec);
-                                            $totalH   = intdiv($totalSec, 3600); $totalM = intdiv($totalSec % 3600, 60); $totalS = $totalSec % 60;
-                                            $intH     = intdiv($intSec, 3600);   $intM   = intdiv($intSec % 3600, 60);   $intS   = $intSec % 60;
-                                            $extH     = intdiv($extSec, 3600);   $extM   = intdiv($extSec % 3600, 60);   $extS   = $extSec % 60;
-                                        @endphp
-                                        {{ str_pad($totalH,2,'0',STR_PAD_LEFT) }}:{{ str_pad($totalM,2,'0',STR_PAD_LEFT) }}:{{ str_pad($totalS,2,'0',STR_PAD_LEFT) }}
-                                        &bull; Internal: {{ str_pad($intH,2,'0',STR_PAD_LEFT) }}:{{ str_pad($intM,2,'0',STR_PAD_LEFT) }}:{{ str_pad($intS,2,'0',STR_PAD_LEFT) }}
-                                        &bull; External: {{ str_pad($extH,2,'0',STR_PAD_LEFT) }}:{{ str_pad($extM,2,'0',STR_PAD_LEFT) }}:{{ str_pad($extS,2,'0',STR_PAD_LEFT) }}
-                                    </small>
+                                <div class="col-md-5">
+                                    @php
+                                        $totalSec = (int) ($report->restored_time ?? 0);
+                                        $extSec   = (int) $report->externalTeams->sum('duration') * 60;
+                                        $intSec   = max(0, $totalSec - $extSec);
+                                        $totalH   = intdiv($totalSec, 3600); $totalM = intdiv($totalSec % 3600, 60); $totalS = $totalSec % 60;
+                                        $intH     = intdiv($intSec, 3600);   $intM   = intdiv($intSec % 3600, 60);   $intS   = $intSec % 60;
+                                        $extH     = intdiv($extSec, 3600);   $extM   = intdiv($extSec % 3600, 60);   $extS   = $extSec % 60;
+                                    @endphp
+                                    <div class="d-flex flex-column gap-2">
+                                        <div class="d-flex align-items-center justify-content-between bg-primary bg-opacity-10 rounded-3 px-3 py-2">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="fas fa-stopwatch text-primary"></i>
+                                                <span class="fw-semibold text-primary">Total</span>
+                                            </div>
+                                            <span class="fw-bold font-monospace text-primary" style="font-size: 15px; letter-spacing: 1px;">
+                                                {{ str_pad($totalH,2,'0',STR_PAD_LEFT) }}:{{ str_pad($totalM,2,'0',STR_PAD_LEFT) }}:{{ str_pad($totalS,2,'0',STR_PAD_LEFT) }}
+                                            </span>
+                                        </div>
+                                        <div class="d-flex align-items-center justify-content-between bg-info bg-opacity-10 rounded-3 px-3 py-2">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="fas fa-user text-info"></i>
+                                                <span class="fw-semibold text-info">Internal</span>
+                                            </div>
+                                            <span class="fw-semibold font-monospace text-info" style="font-size: 15px; letter-spacing: 1px;">
+                                                {{ str_pad($intH,2,'0',STR_PAD_LEFT) }}:{{ str_pad($intM,2,'0',STR_PAD_LEFT) }}:{{ str_pad($intS,2,'0',STR_PAD_LEFT) }}
+                                            </span>
+                                        </div>
+                                        <div class="d-flex align-items-center justify-content-between bg-warning bg-opacity-10 rounded-3 px-3 py-2">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="fas fa-users text-warning"></i>
+                                                <span class="fw-semibold text-warning">External</span>
+                                            </div>
+                                            <span class="fw-semibold font-monospace text-warning" style="font-size: 15px; letter-spacing: 1px;">
+                                                {{ str_pad($extH,2,'0',STR_PAD_LEFT) }}:{{ str_pad($extM,2,'0',STR_PAD_LEFT) }}:{{ str_pad($extS,2,'0',STR_PAD_LEFT) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
                                 @endif
                             </div>
                         </div>
-                        <div class="form-check form-switch">
-                            <input type="hidden" name="servicerestored_active" value="0">
-                            <input class="form-check-input" type="checkbox"
-                                id="serviceRestoredToggle"
-                                {{ $report->servicerestored_time ? 'checked disabled' : '' }}
-                                {{ $report->servicerestored_time || (!auth()->user()->isAdmin() && !$report->status) ? 'disabled' : '' }}>
-                            <label class="form-check-label fw-semibold" for="serviceRestoredToggle"></label>
-                        </div>
-                    </div>
 
-                    <input type="hidden" name="servicerestored_time" id="servicerestoredTimeInput"
-                        value="{{ $report->servicerestored_time ? 
-                            $report->servicerestored_time->format('Y-m-d H:i:s') : '' }}">
+                        <div id="restorationInfo"></div>
+                    </div>
 
                     <div id="serviceRestorationContent" style="display: {{ $report->servicerestored_time ? 'block' : 'none' }};">
 
                         <div class="mb-4">
                             <label class="form-label small text-muted">Resolution <span class="text-danger">*</span></label>
                             <textarea name="resolution" id="resolutionTextArea" class="form-control" rows="4" 
-                                placeholder="Jelaskan langkah resolusi..."
+                                placeholder="Explain the resolution steps..."
                                 @if(!auth()->user()->isAdmin() && !$report->status) readonly @endif>{{ old('resolution', $report->resolution) }}</textarea>
                         </div>
 
@@ -509,7 +559,7 @@ window.addEventListener('load', function () {
     ClassicEditor.create(document.querySelector('#rcaEditor'), {
         toolbar: (isClosed && !isAdmin) ? [] : ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote', 'undo', 'redo'],
         height: 320,
-        placeholder: 'Masukkan analisis akar penyebab di sini...'
+        placeholder: 'Insert root cause analysis here...'
     }).then(editor => {
         if (isClosed && !isAdmin) editor.enableReadOnlyMode('rca-lock');
     }).catch(() => {});
@@ -583,104 +633,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     toggleExternalSection();
 
-    const serviceRestoredToggle  = document.getElementById('serviceRestoredToggle');
+    const servicerestoredTimeInput = document.getElementById('servicerestoredTimeInput');
     const serviceRestorationContent = document.getElementById('serviceRestorationContent');
-    const servicerestoredTimeInput  = document.getElementById('servicerestoredTimeInput');
 
-    const alreadyRestored = servicerestoredTimeInput.value !== '';
-
-    function updateResolutionRequired() {
-        const resolutionTextArea = document.getElementById('resolutionTextArea');
-        if (!resolutionTextArea) return;
-
-        const isRestorationVisible = serviceRestorationContent.style.display !== 'none';
-        if (isRestorationVisible) {
-            resolutionTextArea.setAttribute('required', 'required');
+    function checkRestorationContent() {
+        if (servicerestoredTimeInput && servicerestoredTimeInput.value) {
+            serviceRestorationContent.style.display = 'block';
         } else {
-            resolutionTextArea.removeAttribute('required');
+            serviceRestorationContent.style.display = 'none';
         }
     }
 
-    updateResolutionRequired();
-
-    if (serviceRestoredToggle) {
-        serviceRestoredToggle.addEventListener('change', function (e) {
-            if (alreadyRestored) {
-                e.preventDefault();
-                return;
-            }
-
-            if (this.checked) {
-                this.checked = false;
-
-                Swal.fire({
-                    title: 'Service Restored Confirmation',
-                    text: 'The service restoration time will be recorded now and cannot be changed. Continue?',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#3085d6',
-                    cancelButtonColor: '#d33',
-                    confirmButtonText: 'Yes, Continue',
-                    cancelButtonText: 'Cancel'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        serviceRestoredToggle.disabled = true;
-                        serviceRestoredToggle.checked = true;
-
-                        fetch('{{ route("report.markRestored", $report->uuid) }}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                            },
-                            body: JSON.stringify({})
-                        })
-                        .then(res => {
-                            const contentType = res.headers.get('content-type');
-                            if (contentType && contentType.includes('application/json')) {
-                                return res.json();
-                            }
-                            return { success: true, servicerestored_time: null, restored_time: 0, total_internal: 0, total_external: 0 };
-                        })
-                        .then(data => {
-                            if (data.success) {
-                                servicerestoredTimeInput.value = data.servicerestored_time ?? '';
-                                serviceRestorationContent.style.display = 'block';
-                                updateResolutionRequired();
-
-                                const statusInput = document.getElementById('statusInput');
-                                if (statusInput) statusInput.value = '2';
-
-                                if (data.servicerestored_time) {
-                                    document.getElementById('restorationInfo').innerHTML = `
-                                        <small class="text-muted">Restored on <strong>${data.servicerestored_time}</strong></small><br>
-                                        <small class="text-muted">
-                                            Total: ${formatSeconds(data.restored_time)}
-                                            &bull; Internal: ${formatSeconds(data.total_internal)}
-                                            &bull; External: ${formatSeconds(data.total_external)}
-                                        </small>
-                                    `;
-
-                                    const btnCloseTicket = document.getElementById('btnCloseTicket');
-                                    if (btnCloseTicket) {
-                                        btnCloseTicket.disabled = false;
-                                        btnCloseTicket.title = '';
-                                    }
-                                }
-                            }
-                        })
-                        .catch(err => {
-                            console.error('Restoration error:', err);
-                            serviceRestorationContent.style.display = 'block';
-                        });
-                    }
-                });
-            } else {
-                serviceRestorationContent.style.display = 'none';
-                servicerestoredTimeInput.value = '';
-                updateResolutionRequired();
-            }
-        });
+    if (servicerestoredTimeInput) {
+        servicerestoredTimeInput.addEventListener('change', checkRestorationContent);
+        checkRestorationContent();
     }
 
     const startTimeInput = document.getElementById('start_time');
@@ -1398,13 +1364,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         const resolutionTextArea = document.getElementById('resolutionTextArea');
-        // if (resolutionTextArea) {
-        //     if (isIncident) {
-        //         resolutionTextArea.setAttribute('required', 'required');
-        //     } else {
-        //         resolutionTextArea.removeAttribute('required');
-        //     }
-        // }
 
         const severityValue = isInitialLoad ? '{{ old("severity", $report->severity ?? "") }}' : '';
         const assignedValue = isInitialLoad ? '{{ old("assigned_to", $report->assigned_to ?? "") }}' : '';

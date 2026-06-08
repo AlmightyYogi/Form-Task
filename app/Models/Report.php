@@ -31,6 +31,7 @@ class Report extends Model
         'status',
         'handled_by',
         'file_downtime_evidence',
+        'created_at',
         'closed_at'
     ];
 

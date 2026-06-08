@@ -155,13 +155,11 @@ class ReportController extends Controller
             $data['handled_by'] = $request->input('handled_by', 0) ? 1 : 0;
 
             if (!empty($data['servicerestored_time'])) {
-                if (!$report->restored_time) {
-                    $serviceRestored = Carbon::parse($data['servicerestored_time']);
-                    $createdAt       = Carbon::parse($report->created_at);
-                    $data['restored_time'] = abs($serviceRestored->diffInSeconds($createdAt));
-                } else {
-                    $data['restored_time'] = $report->restored_time;
-                }
+                $serviceRestored = Carbon::parse($data['servicerestored_time']);
+                $createdAt = !empty($data['created_at'])
+                    ? Carbon::parse($data['created_at'])
+                    : Carbon::parse($report->created_at);
+                $data['restored_time'] = abs($serviceRestored->diffInSeconds($createdAt));
             } else {
                 $data['restored_time'] = null;
             }
@@ -173,6 +171,11 @@ class ReportController extends Controller
             } else {
                 $data['total_internal_duration'] = null;
             }
+
+            if (!empty($data['created_at'])) {
+                $data['created_at'] = Carbon::parse($data['created_at']);
+            }
+            unset($data['created_at']);
 
             $existingDowntimeFiles = $request->input('existing_downtime_evidence', []);
             
@@ -235,6 +238,13 @@ class ReportController extends Controller
             }
 
             $report->update($data);
+
+            if (!empty($request->input('created_at'))) {
+                $report->timestamps = false;
+                $report->created_at = Carbon::parse($request->input('created_at'));
+                $report->save();
+                $report->timestamps = true;
+            }
 
             return redirect()->back()
                 ->with('success', 'Report updated successfully');
