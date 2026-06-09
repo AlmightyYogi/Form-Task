@@ -182,11 +182,11 @@
                             </small>
                         </div>
                         <div class="form-check form-switch">
-                            <input type="hidden" name="handled_by" value="1">
+                            <input type="hidden" name="handled_by" value="0">
                             <input class="form-check-input" type="checkbox" 
-                                   name="handled_by" value="1" id="handledByToggle"
-                                   @if(!auth()->user()->isAdmin() && !$report->status) disabled @endif
-                                   {{ old('handled_by', $report->handled_by) ? 'checked' : '' }}>
+                                name="handled_by" value="1" id="handledByToggle"
+                                @if(!auth()->user()->isAdmin() && !$report->status) disabled @endif
+                                {{ old('handled_by', $report->handled_by) ? 'checked' : '' }}>
                             <label class="form-check-label fw-semibold" for="handledByToggle"></label>
                         </div>
                     </div>
