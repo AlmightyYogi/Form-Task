@@ -237,6 +237,36 @@
 
     @stack('scripts')
 
+    <script>
+        function preventBackNavigation() {
+            if (window.history && window.history.replaceState) {
+                window.history.replaceState(null, '', window.location.href);
+                
+                window.addEventListener('popstate', function (event) {
+                    window.history.pushState(null, '', window.location.href);
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            preventBackNavigation();
+        });
+
+        window.addEventListener('pageshow', function (event) {
+            if (event.persisted) {
+                preventBackNavigation();
+            }
+        });
+
+        @if(session('replace_history'))
+            (function () {
+                setTimeout(() => {
+                    preventBackNavigation();
+                }, 300);
+            })();
+        @endif
+    </script>
+
 </body>
 
 </html>

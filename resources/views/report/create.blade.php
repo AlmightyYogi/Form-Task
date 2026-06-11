@@ -242,8 +242,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 { label: 'Others', isOther: true }
             ],
             scopeOptions: [
-                { label: 'Application/System/Code', isOther: false },
-                { label: 'Infrastructure', isOther: false },
+                { label: 'Emergency', isOther: false },
+                { label: 'Normal', isOther: false },
+                { label: 'Standard', isOther: false },
+                { label: 'Spotlight', isOther: false },
                 { label: 'Others', isOther: true }
             ]
         }
@@ -349,6 +351,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         dynamicFields.style.display = 'block';
         priorityLegend.innerHTML = `${configs[type].priorityLabel} <span class="text-danger">*</span>`;
+
+        const scopeContainer = document.querySelector('#scopeOptions')?.closest('.col-md-4');
+        const scopeLabel = scopeContainer?.querySelector('label');
+        if (scopeLabel) {
+            const scopeLabelText = type === 'Activity' ? 'Type Activity' : 'Scope';
+            scopeLabel.innerHTML = `${scopeLabelText} <span class="text-danger">*</span>`;
+        }
 
         priorityOptions.innerHTML = '';
         configs[type].priorityOptions.forEach(opt => {

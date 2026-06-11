@@ -124,7 +124,11 @@
                             <div id="assignedOptions"></div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label small text-muted">Scope <span class="text-danger">*</span></label>
+                            @if($report->type === 'Activity')
+                                <label class="form-label small text-muted">Type Activity <span class="text-danger">*</span></label>
+                            @else
+                                <label class="form-label small text-muted">Scope <span class="text-danger">*</span></label>
+                            @endif
                             <div id="scopeOptions"></div>
                         </div>
                     </div>
@@ -1269,7 +1273,7 @@ document.addEventListener('DOMContentLoaded', function () {
             priorityLabel: 'Impact',
             priorityOptions: [{ label: '1 – High Impact' }, { label: '2 – Medium Impact' }, { label: '3 – Low Impact' }, { label: '4 – No Impact' }],
             assignedOptions: [{ label: 'B2B Apps Ops Support' }, { label: 'App Owner/L3' }],
-            scopeOptions: [{ label: 'Application/System/Code' }, { label: 'Infrastructure' }]
+            scopeOptions: [{ label: 'Emergency' }, { label: 'Normal' }, { label: 'Standard' }, { label: 'Spotlight' }]
         }
     };
 

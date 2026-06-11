@@ -91,7 +91,8 @@ class ReportController extends Controller
 
             return redirect()
                 ->route('report.index')
-                ->with('success', 'Report created successfully');
+                ->with('success', 'Report created successfully')
+                ->with('replace_history', true);
 
         } catch (\Exception $e) {
             return redirect()
@@ -141,14 +142,18 @@ class ReportController extends Controller
             }
 
             if (isset($data['status'])) {
-                if ($data['status'] == 0) {
+                $newStatus = (int) $data['status'];
+                $oldStatus = (int) $report->status;
+
+                if ($newStatus === 0 && $oldStatus !== 0) {
                     $data['closed_at'] = now();
-                    if ($report->status == 1 || $report->status == 2) {
-                        $data['resolved_time'] = now();
-                    }
-                } else if ($data['status'] == 1) {
+                    $data['resolved_time'] = now();
+                } elseif ($newStatus !== 0 && $oldStatus === 0) {
                     $data['closed_at'] = null;
                     $data['resolved_time'] = null;
+                } else {
+                    unset($data['closed_at']);
+                    unset($data['resolved_time']);
                 }
             }
 
@@ -246,8 +251,10 @@ class ReportController extends Controller
                 $report->timestamps = true;
             }
 
-            return redirect()->back()
-                ->with('success', 'Report updated successfully');
+            return redirect()
+                ->route('report.show', $uuid)
+                ->with('success', 'Report updated successfully')
+                ->with('replace_history', true);
 
         } catch (\Exception $e) {
             return redirect()->back()
