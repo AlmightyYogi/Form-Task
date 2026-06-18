@@ -1,6 +1,13 @@
 @extends('layouts.main')
 
 @section('content')
+<style>
+    .report-detail-table th {
+        width: 1%;
+        white-space: nowrap;
+    }
+</style>
+
 <div class="card mx-auto" style="max-width: 1150px;">
     <div class="card-header text-center">
         <h3 class="mb-0 fw-semibold">Incident / Activity Report Detail</h3>
@@ -16,7 +23,7 @@
         @endif
 
         <div class="table-responsive">
-            <table class="table table-bordered table-striped align-middle">
+            <table class="table table-bordered table-striped align-middle report-detail-table">
                 <tbody>
                     <tr>
                         <th>Requestor</th>

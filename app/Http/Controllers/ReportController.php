@@ -225,7 +225,7 @@ class ReportController extends Controller
 
                 $newFiles = [];
                 foreach ($request->file('restoration_evidence') as $file) {
-                    $filename = time() . '_' . \Illuminate\Support\Str::random(8) . '_' . $file->getClientOriginalName();
+                    $filename = time() . '_' . Str::random(8) . '_' . $file->getClientOriginalName();
                     $file->storeAs('restoration_evidence', $filename, 'public');
                     $newFiles[] = $filename;
                 }
